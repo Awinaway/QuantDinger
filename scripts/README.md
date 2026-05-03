@@ -148,3 +148,25 @@ del QuantDinger-Vue-src\src\locales\lang\*.bak
 # 删除缓存
 rmdir /s /q scripts\.i18n-cache
 ```
+
+---
+
+## Kronos smoke checks
+
+For the local Kronos dashboard integration, we keep two lightweight checks:
+
+### Static check
+
+Safe for CI. Does not start services or use Docker.
+
+```bash
+bash scripts/check-kronos-static.sh
+```
+
+### Local runtime smoke check
+
+Safe for a running local stack. Only performs read-only HTTP checks against localhost.
+
+```bash
+bash scripts/local-kronos-smoke.sh
+```
