@@ -73,6 +73,27 @@ def _build_trend_outlook_summary(trend_outlook: Dict[str, Any], language: str) -
     return " | ".join(parts)
 
 
+def _llm_unavailable_summary(language: str) -> str:
+    is_zh = str(language or "").lower().startswith("zh")
+    if is_zh:
+        return "当前显示的是客观量化分析结果；AI 文本引擎暂不可用。"
+    return "Showing objective analysis only; the AI text provider is currently unavailable."
+
+
+def _llm_unavailable_reason(language: str) -> str:
+    is_zh = str(language or "").lower().startswith("zh")
+    if is_zh:
+        return "AI 文本引擎未配置或暂时不可用"
+    return "AI text provider unavailable or not configured"
+
+
+def _llm_unavailable_risk(language: str) -> str:
+    is_zh = str(language or "").lower().startswith("zh")
+    if is_zh:
+        return "当前结论主要基于客观规则分数，缺少 LLM 解释层"
+    return "Current result is driven mainly by objective scoring without the LLM explanation layer"
+
+
 # -----------------------------------------------------------------------------
 # Geopolitical / major-conflict detection (word boundaries + tiers)
 # Avoid false positives: "war" in "toward/award", "tension" in "extension",
@@ -1049,7 +1070,7 @@ IMPORTANT:
                     )
 
                 current_price_tf = _extract_current_price(d_tf) or 0.0
-                objective = self._calculate_objective_score(d_tf, current_price_tf)
+                objective = self._calculate_objective_score(d_tf, current_price_tf, language=language)
                 overall_score = float(objective.get("overall_score", 0.0) or 0.0)
                 decision = self._score_to_decision(overall_score, market=market)
                 abs_score = abs(overall_score)
@@ -1081,7 +1102,7 @@ IMPORTANT:
                         timeout=25,
                     )
                     cp_1w = _extract_current_price(d_1w) or 0.0
-                    obj_1w = self._calculate_objective_score(d_1w, cp_1w)
+                    obj_1w = self._calculate_objective_score(d_1w, cp_1w, language=language)
                     sc_1w = float(obj_1w.get("overall_score", 0.0) or 0.0)
                     objective_by_tf["1W"] = {
                         "objective_score": obj_1w,
@@ -1105,7 +1126,7 @@ IMPORTANT:
                         timeout=18,
                     )
                     cp_1h = _extract_current_price(d_1h) or 0.0
-                    obj_1h = self._calculate_objective_score(d_1h, cp_1h)
+                    obj_1h = self._calculate_objective_score(d_1h, cp_1h, language=language)
                     sc_1h = float(obj_1h.get("overall_score", 0.0) or 0.0)
                     objective_by_tf["1H"] = {
                         "objective_score": obj_1h,
@@ -1195,14 +1216,14 @@ IMPORTANT:
             default_struct = {
                 "decision": "HOLD",
                 "confidence": 50,
-                "summary": "Analysis failed",
+                "summary": _llm_unavailable_summary(language),
                 "entry_price": current_price,
                 "stop_loss": current_price * 0.95,
                 "take_profit": current_price * 1.05,
                 "position_size_pct": 10,
                 "timeframe": "medium",
-                "key_reasons": ["Unable to analyze"],
-                "risks": ["Analysis error"],
+                "key_reasons": [_llm_unavailable_reason(language)],
+                "risks": [_llm_unavailable_risk(language)],
                 "technical_score": 50,
                 "fundamental_score": 50,
                 "sentiment_score": 50,
@@ -1241,7 +1262,7 @@ IMPORTANT:
             logger.info(f"LLM call completed in {llm_time}ms")
             
             # Phase 4: Objective score (primary tf) + consensus calibration
-            objective_score = self._calculate_objective_score(data, current_price)
+            objective_score = self._calculate_objective_score(data, current_price, language=language)
             logger.info(
                 f"Primary objective score: {objective_score['overall_score']:.1f} "
                 f"(Technical: {objective_score['technical_score']:.1f}, Fundamental: {objective_score['fundamental_score']:.1f}, "
@@ -1887,7 +1908,7 @@ IMPORTANT:
         
         return analysis
     
-    def _calculate_objective_score(self, data: Dict[str, Any], current_price: float) -> Dict[str, float]:
+    def _calculate_objective_score(self, data: Dict[str, Any], current_price: float, language: str = "en-US") -> Dict[str, float]:
         """
         基于客观数据计算量化评分系统
         
@@ -1912,7 +1933,7 @@ IMPORTANT:
         
         # 2. 基本面评分 (-100 to +100)
         fundamental_score = self._calculate_fundamental_score(fundamental, data.get("market", ""))
-        crypto_factor_objective = self._calculate_crypto_factor_score(crypto_factors, price_data)
+        crypto_factor_objective = self._calculate_crypto_factor_score(crypto_factors, price_data, language=language)
         crypto_factor_score = float(crypto_factor_objective.get("score", 0.0) or 0.0)
         if str(data.get("market") or "").strip() == "Crypto" and crypto_factors:
             fundamental_score = crypto_factor_score
@@ -2278,13 +2299,14 @@ IMPORTANT:
 
         return max(-100, min(100, score))
 
-    def _calculate_crypto_factor_score(self, crypto_factors: Dict[str, Any], price_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_crypto_factor_score(self, crypto_factors: Dict[str, Any], price_data: Dict[str, Any], language: str = "en-US") -> Dict[str, Any]:
         """基于加密货币交易大数据因子计算可解释评分。"""
         if not crypto_factors:
             return {"score": 0.0, "breakdown": [], "summary": ""}
 
         breakdown = []
         score = 0.0
+        is_zh = str(language or "").lower().startswith("zh")
 
         def add(name: str, value: float, reason: str):
             nonlocal score
@@ -2304,9 +2326,9 @@ IMPORTANT:
                 fr = float(funding_rate)
                 oi = float(oi_change)
                 if fr > 0 and oi > 3:
-                    add("funding_oi", 18, "资金费率偏正且 OI 上升，衍生品多头动能增强")
+                    add("funding_oi", 18, "资金费率偏正且 OI 上升，衍生品多头动能增强" if is_zh else "Positive funding with rising OI suggests stronger bullish derivatives momentum")
                 elif fr < 0 and oi > 3:
-                    add("funding_oi", -18, "资金费率偏负且 OI 上升，空头动能增强")
+                    add("funding_oi", -18, "资金费率偏负且 OI 上升，空头动能增强" if is_zh else "Negative funding with rising OI suggests stronger bearish derivatives momentum")
         except Exception:
             pass
 
@@ -2314,9 +2336,9 @@ IMPORTANT:
             if exchange_netflow is not None:
                 enf = float(exchange_netflow)
                 if enf < 0:
-                    add("exchange_netflow", 16, "交易所净流出，筹码倾向离场保管，通常偏利多")
+                    add("exchange_netflow", 16, "交易所净流出，筹码倾向离场保管，通常偏利多" if is_zh else "Exchange net outflow often signals coins leaving venues, which is usually supportive")
                 elif enf > 0:
-                    add("exchange_netflow", -16, "交易所净流入，潜在卖压或风险对冲上升")
+                    add("exchange_netflow", -16, "交易所净流入，潜在卖压或风险对冲上升" if is_zh else "Exchange net inflow can increase potential sell pressure or hedging activity")
         except Exception:
             pass
 
@@ -2324,9 +2346,9 @@ IMPORTANT:
             if stablecoin_netflow is not None:
                 stf = float(stablecoin_netflow)
                 if stf > 0:
-                    add("stablecoin_netflow", 12, "稳定币净流入增强，潜在买盘增加")
+                    add("stablecoin_netflow", 12, "稳定币净流入增强，潜在买盘增加" if is_zh else "Stablecoin inflow is improving, which can support additional buying power")
                 elif stf < 0:
-                    add("stablecoin_netflow", -12, "稳定币净流出，边际买盘转弱")
+                    add("stablecoin_netflow", -12, "稳定币净流出，边际买盘转弱" if is_zh else "Stablecoin outflow suggests weaker marginal buying demand")
         except Exception:
             pass
 
@@ -2334,9 +2356,9 @@ IMPORTANT:
             if long_short_ratio is not None:
                 lsr = float(long_short_ratio)
                 if lsr > 1.6:
-                    add("long_short_ratio", -10, "多空比过热，需警惕多头拥挤和长挤风险")
+                    add("long_short_ratio", -10, "多空比过热，需警惕多头拥挤和长挤风险" if is_zh else "Long/short ratio looks overheated, raising crowding and long squeeze risk")
                 elif lsr < 0.75:
-                    add("long_short_ratio", 8, "空头占优过深，存在反向挤空可能")
+                    add("long_short_ratio", 8, "空头占优过深，存在反向挤空可能" if is_zh else "Short positioning looks crowded, leaving room for a squeeze higher")
         except Exception:
             pass
 
@@ -2345,21 +2367,41 @@ IMPORTANT:
                 vol = float(volume_change)
                 chg = float(change_24h)
                 if vol > 15 and chg > 0:
-                    add("volume_price", 10, "放量上涨，趋势确认度提升")
+                    add("volume_price", 10, "放量上涨，趋势确认度提升" if is_zh else "Rising price with expanding volume improves trend confirmation")
                 elif vol > 15 and chg < 0:
-                    add("volume_price", -10, "放量下跌，空头主导增强")
+                    add("volume_price", -10, "放量下跌，空头主导增强" if is_zh else "Falling price with expanding volume strengthens bearish control")
                 elif vol < -15 and abs(chg) > 3:
-                    add("volume_price", -6 if chg > 0 else 6, "价格波动与成交回落背离，趋势持续性存疑")
+                    add("volume_price", -6 if chg > 0 else 6, "价格波动与成交回落背离，趋势持续性存疑" if is_zh else "Sharp price movement with fading volume makes trend persistence less reliable")
         except Exception:
             pass
 
         squeeze_risk = ((crypto_factors.get("signals") or {}).get("squeeze_risk") or "").lower()
         if squeeze_risk == "high":
-            add("squeeze_risk", -8, "衍生品拥挤度高，短线波动放大风险上升")
+            add("squeeze_risk", -8, "衍生品拥挤度高，短线波动放大风险上升" if is_zh else "Derivatives positioning looks crowded, increasing short-term volatility risk")
         elif squeeze_risk == "medium":
-            add("squeeze_risk", -3, "衍生品拥挤度抬升，需要控制追涨杀跌")
+            add("squeeze_risk", -3, "衍生品拥挤度抬升，需要控制追涨杀跌" if is_zh else "Crowding risk is building, so chasing price moves needs more caution")
 
-        summary = crypto_factors.get("summary") or ""
+        if is_zh:
+            summary = crypto_factors.get("summary") or ""
+        else:
+            flow = ((crypto_factors.get("signals") or {}).get("flow_bias") or "neutral").lower()
+            derivatives = ((crypto_factors.get("signals") or {}).get("derivatives_bias") or "neutral").lower()
+            squeeze = ((crypto_factors.get("signals") or {}).get("squeeze_risk") or "low").lower()
+            parts = []
+            if oi_change is not None:
+                parts.append(f"OI {'up' if float(oi_change) >= 0 else 'down'} {abs(float(oi_change)):.1f}%")
+            if funding_rate is not None:
+                parts.append(f"funding {'positive' if float(funding_rate) >= 0 else 'negative'}")
+            if exchange_netflow is not None:
+                parts.append("exchange net outflow" if float(exchange_netflow) < 0 else "exchange net inflow")
+            if stablecoin_netflow is not None:
+                parts.append("stablecoin inflow improving" if float(stablecoin_netflow) > 0 else "stablecoin outflow")
+            if volume_change is not None:
+                parts.append(f"volume {'expanding' if float(volume_change) > 0 else 'fading'}")
+            outlook = "bullish" if derivatives == "bullish" or flow == "bullish" else ("bearish" if derivatives == "bearish" or flow == "bearish" else "neutral")
+            risk_text = {"high": "high squeeze risk", "medium": "medium squeeze risk", "low": "low squeeze risk"}.get(squeeze, "unknown risk")
+            base = ", ".join(parts[:4]) if parts else "Limited on-chain and derivatives data"
+            summary = f"{base}; overall {outlook}; {risk_text}"
         return {
             "score": max(-100.0, min(100.0, score)),
             "breakdown": breakdown,
