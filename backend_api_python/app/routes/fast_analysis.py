@@ -12,6 +12,7 @@ from app.utils.logger import get_logger
 from app.services.fast_analysis import get_fast_analysis_service
 from app.services.analysis_memory import get_analysis_memory
 from app.services.billing_service import get_billing_service
+from app.services.market_identity import canonicalize_market_symbol
 
 logger = get_logger(__name__)
 
@@ -144,6 +145,10 @@ def analyze():
                 'msg': 'market and symbol are required',
                 'data': None
             }), 400
+
+        canonical = canonicalize_market_symbol(market, symbol)
+        market = canonical.market
+        symbol = canonical.symbol
         
         # Get current user's ID to associate analysis with user
         user_id = getattr(g, 'user_id', None)
@@ -339,6 +344,10 @@ def analyze_legacy():
                 'data': None
             }), 400
 
+        canonical = canonicalize_market_symbol(market, symbol)
+        market = canonical.market
+        symbol = canonical.symbol
+
         # Billing / credits (same behavior as /analyze)
         user_id = getattr(g, 'user_id', None)
         if not user_id:
@@ -471,6 +480,10 @@ def get_history():
                 'msg': 'market and symbol are required',
                 'data': None
             }), 400
+
+        canonical = canonicalize_market_symbol(market, symbol)
+        market = canonical.market
+        symbol = canonical.symbol
         
         memory = get_analysis_memory()
         history = memory.get_recent(market, symbol, days, limit)
@@ -631,6 +644,11 @@ def get_performance():
         market = request.args.get('market', '').strip() or None
         symbol = request.args.get('symbol', '').strip() or None
         days = int(request.args.get('days', 30))
+
+        if market and symbol:
+            canonical = canonicalize_market_symbol(market, symbol)
+            market = canonical.market
+            symbol = canonical.symbol
         
         memory = get_analysis_memory()
         stats = memory.get_performance_stats(market, symbol, days)
@@ -668,6 +686,10 @@ def get_similar_patterns():
                 'msg': 'market and symbol are required',
                 'data': None
             }), 400
+
+        canonical = canonicalize_market_symbol(market, symbol)
+        market = canonical.market
+        symbol = canonical.symbol
         
         # Get current indicators
         service = get_fast_analysis_service()

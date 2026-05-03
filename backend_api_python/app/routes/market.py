@@ -20,6 +20,7 @@ from app.data.market_symbols_seed import (
     search_symbols as seed_search_symbols,
     get_symbol_name as seed_get_symbol_name
 )
+from app.services.market_identity import canonicalize_market_symbol
 from app.services.symbol_name import resolve_symbol_name
 
 logger = get_logger(__name__)
@@ -45,6 +46,66 @@ def _now_ts() -> int:
 
 def _normalize_symbol(symbol: str) -> str:
     return (symbol or '').strip().upper()
+
+
+def _repair_watchlist_row(db, user_id: int, row: dict) -> dict:
+    """
+    Canonicalize a legacy watchlist row in-place.
+
+    If the corrected market/symbol already exists for the same user, delete the
+    bad duplicate row and let the canonical row survive.
+    """
+    row_id = row.get("id")
+    market = row.get("market")
+    symbol = row.get("symbol")
+    if not row_id or not market or not symbol:
+        return row
+
+    canonical = canonicalize_market_symbol(market, symbol)
+    if canonical.market == market and canonical.symbol == symbol:
+        return row
+
+    cur = db.cursor()
+    cur.execute(
+        """
+        SELECT id, name
+        FROM qd_watchlist
+        WHERE user_id = ? AND market = ? AND symbol = ? AND id <> ?
+        LIMIT 1
+        """,
+        (user_id, canonical.market, canonical.symbol, row_id),
+    )
+    existing = cur.fetchone()
+
+    if existing:
+        cur.execute("DELETE FROM qd_watchlist WHERE id = ?", (row_id,))
+        row["id"] = existing["id"]
+        row["market"] = canonical.market
+        row["symbol"] = canonical.symbol
+        row["name"] = existing.get("name") or row.get("name") or canonical.symbol
+        cur.close()
+        return row
+
+    resolved = (
+        resolve_symbol_name(canonical.market, canonical.symbol)
+        or seed_get_symbol_name(canonical.market, canonical.symbol)
+        or row.get("name")
+        or canonical.symbol
+    )
+    cur.execute(
+        """
+        UPDATE qd_watchlist
+        SET market = ?, symbol = ?, name = ?, updated_at = NOW()
+        WHERE id = ?
+        """,
+        (canonical.market, canonical.symbol, resolved, row_id),
+    )
+    cur.close()
+
+    row["market"] = canonical.market
+    row["symbol"] = canonical.symbol
+    row["name"] = resolved
+    return row
 
 def _ensure_watchlist_table():
     # Table is created by db schema init; this is only a sanity hook.
@@ -267,6 +328,8 @@ def get_watchlist():
             )
             rows = cur.fetchall() or []
 
+            rows = [_repair_watchlist_row(db, user_id, row) for row in rows]
+
             # Backfill display names for legacy rows (name empty or equals symbol).
             # This keeps UI consistent without requiring users to re-add items.
             for row in rows:
@@ -308,6 +371,10 @@ def add_watchlist():
         if not market or not symbol:
             return jsonify({'code': 0, 'msg': 'Missing market or symbol', 'data': None}), 400
 
+        canonical = canonicalize_market_symbol(market, symbol)
+        market = canonical.market
+        symbol = canonical.symbol
+
         # Prefer frontend-provided name (search results), otherwise resolve via seed/public sources.
         resolved = resolve_symbol_name(market, symbol) or seed_get_symbol_name(market, symbol)
         name = name_in or resolved or symbol
@@ -341,16 +408,24 @@ def remove_watchlist():
     try:
         user_id = g.user_id
         data = request.get_json() or {}
+        market = (data.get('market') or '').strip()
         symbol = _normalize_symbol(data.get('symbol'))
         if not symbol:
             return jsonify({'code': 0, 'msg': 'Missing symbol', 'data': None}), 400
 
         with get_db_connection() as db:
             cur = db.cursor()
-            cur.execute(
-                "DELETE FROM qd_watchlist WHERE user_id = ? AND symbol = ?",
-                (user_id, symbol)
-            )
+            if market:
+                canonical = canonicalize_market_symbol(market, symbol)
+                cur.execute(
+                    "DELETE FROM qd_watchlist WHERE user_id = ? AND market = ? AND symbol = ?",
+                    (user_id, canonical.market, canonical.symbol)
+                )
+            else:
+                cur.execute(
+                    "DELETE FROM qd_watchlist WHERE user_id = ? AND symbol = ?",
+                    (user_id, symbol)
+                )
             db.commit()
             cur.close()
         return jsonify({'code': 1, 'msg': 'success', 'data': None})
@@ -363,6 +438,10 @@ def remove_watchlist():
 def get_single_price(market: str, symbol: str) -> dict:
     """获取单个标的的价格数据"""
     try:
+        canonical = canonicalize_market_symbol(market, symbol)
+        market = canonical.market
+        symbol = canonical.symbol
+
         # 使用 get_realtime_price 获取实时价格（内部已有30秒缓存）
         # 相比原先的 '1D' K线逻辑，这能更及时地反映 Crypto 等 24h 市场的变化
         price_data = kline_service.get_realtime_price(market, symbol)
