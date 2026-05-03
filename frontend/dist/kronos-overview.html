@@ -40,6 +40,12 @@
     }
     .hero { grid-template-columns: 1.2fr 0.8fr; margin-bottom: 22px; }
     .asset-grid { grid-template-columns: 1fr 1fr; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
     .panel {
       background: var(--card);
       border: 1px solid var(--border);
@@ -48,6 +54,7 @@
       backdrop-filter: blur(12px);
     }
     .hero-main, .hero-side, .asset-card { padding: 26px; }
+    .summary-panel { padding: 24px 26px; }
     .eyebrow {
       display: inline-flex;
       align-items: center;
@@ -103,6 +110,76 @@
     }
     .hero-side h2 { margin: 0 0 12px; font-size: 20px; letter-spacing: -0.03em; }
     .hero-side p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; }
+    .summary-panel h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      letter-spacing: -0.04em;
+    }
+    .summary-lead {
+      margin: 0;
+      color: #473f35;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    .summary-stack {
+      display: grid;
+      gap: 12px;
+    }
+    .winner-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(55, 42, 18, 0.08);
+    }
+    .winner-title {
+      margin: 0 0 6px;
+      font-size: 19px;
+      letter-spacing: -0.03em;
+    }
+    .winner-sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .rank-list {
+      display: grid;
+      gap: 12px;
+    }
+    .rank-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.68);
+      border: 1px solid rgba(55, 42, 18, 0.08);
+    }
+    .rank-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      background: #8f7027;
+    }
+    .rank-name {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .rank-score {
+      color: var(--muted);
+      font-size: 13px;
+    }
     .asset-card {
       display: grid;
       gap: 18px;
@@ -135,6 +212,7 @@
     .badge.ok { background: rgba(47, 155, 107, 0.12); color: var(--green); }
     .badge.warn { background: rgba(189, 136, 35, 0.14); color: var(--amber); }
     .badge.down { background: rgba(197, 83, 64, 0.12); color: var(--red); }
+    .badge.info { background: rgba(39, 86, 141, 0.10); color: #29537f; }
     .mini-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -209,6 +287,31 @@
       line-height: 1.6;
       font-size: 14px;
     }
+    .asset-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(189, 136, 35, 0.12);
+      color: #8b6517;
+    }
+    .asset-status.ok {
+      background: rgba(47, 155, 107, 0.12);
+      color: var(--green);
+    }
+    .asset-status.warn {
+      background: rgba(189, 136, 35, 0.12);
+      color: #8b6517;
+    }
+    .asset-status.down {
+      background: rgba(197, 83, 64, 0.12);
+      color: var(--red);
+    }
     .error-box {
       display: none;
       margin-top: 16px;
@@ -220,7 +323,8 @@
       font-size: 14px;
     }
     @media (max-width: 960px) {
-      .hero, .asset-grid, .mini-grid { grid-template-columns: 1fr; }
+      .hero, .asset-grid, .mini-grid, .summary-grid { grid-template-columns: 1fr; }
+      .rank-row, .winner-card { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -255,6 +359,39 @@
       </aside>
     </section>
 
+    <section class="summary-grid">
+      <article class="panel summary-panel">
+        <div class="eyebrow">Decision Layer</div>
+        <h2>What Looks Best Right Now</h2>
+        <p class="summary-lead" id="summaryLead">
+          Loading current cross-asset read...
+        </p>
+      </article>
+      <aside class="summary-stack">
+        <div class="panel summary-panel">
+          <h2>Top Setup</h2>
+          <div class="winner-card">
+            <div>
+              <h3 class="winner-title" id="winnerTitle">Loading...</h3>
+              <p class="winner-sub" id="winnerNote">Waiting for live signal comparison.</p>
+            </div>
+            <div class="badge info" id="winnerBadge">Rank pending</div>
+          </div>
+        </div>
+        <div class="panel summary-panel">
+          <h2>Asset Ranking</h2>
+          <div class="rank-list" id="rankList">
+            <div class="rank-row">
+              <div class="rank-num">1</div>
+              <div class="rank-name">Loading...</div>
+              <div class="rank-score">Waiting for scores</div>
+              <div class="badge info">Pending</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
     <section class="asset-grid">
       <article class="panel asset-card" id="xauCard">
         <div class="asset-head">
@@ -264,6 +401,7 @@
           </div>
           <div class="badge warn" id="xauBadge">Loading...</div>
         </div>
+        <div class="asset-status" id="xauStatus">Waiting for live read</div>
         <div class="mini-grid">
           <div class="mini-metric">
             <div class="mini-label">Bias</div>
@@ -307,6 +445,7 @@
           </div>
           <div class="badge warn" id="btcBadge">Loading...</div>
         </div>
+        <div class="asset-status" id="btcStatus">Waiting for live read</div>
         <div class="mini-grid">
           <div class="mini-metric">
             <div class="mini-label">Bias</div>
@@ -348,7 +487,12 @@
     const els = {
       refreshBtn: document.getElementById("refreshBtn"),
       errorBox: document.getElementById("errorBox"),
-      updatedLine: document.getElementById("updatedLine")
+      updatedLine: document.getElementById("updatedLine"),
+      summaryLead: document.getElementById("summaryLead"),
+      winnerTitle: document.getElementById("winnerTitle"),
+      winnerNote: document.getElementById("winnerNote"),
+      winnerBadge: document.getElementById("winnerBadge"),
+      rankList: document.getElementById("rankList")
     };
 
     function setError(message) {
@@ -379,6 +523,38 @@
       if (text.includes("bear") || text.includes("high")) return "badge down";
       if (text.includes("bull")) return "badge ok";
       return "badge warn";
+    }
+
+    function scoreSignal(data) {
+      const confidence = Number(data.confidence) || 0;
+      const magnitude = Math.min(Math.abs(Number(data.forecast_return_pct) || 0) * 28, 18);
+      const biasBonus = String(data.bias || "").toLowerCase() === "neutral" ? -12 : 10;
+      const riskPenalty = data.risk === "High" ? 18 : data.risk === "Caution" ? 8 : 0;
+      const regimeBonus = data.regime === "Trend" ? 10 : data.regime === "Range" ? 0 : -6;
+      return Math.round(confidence + magnitude + biasBonus + regimeBonus - riskPenalty);
+    }
+
+    function classifySetup(data) {
+      const confidence = Number(data.confidence) || 0;
+      const bias = String(data.bias || "");
+      const risk = String(data.risk || "");
+      const regime = String(data.regime || "");
+
+      if (bias !== "Neutral" && confidence >= 65 && risk === "Normal") {
+        return { label: "Interesting", badge: "badge ok" };
+      }
+      if (bias === "Neutral" || confidence < 50 || risk === "High") {
+        return { label: "Avoid", badge: "badge down" };
+      }
+      if (regime === "Trend" && confidence >= 58 && risk !== "High") {
+        return { label: "Interesting", badge: "badge ok" };
+      }
+      return { label: "Watch", badge: "badge warn" };
+    }
+
+    function assetSentence(data) {
+      const move = fmtPercent(data.forecast_return_pct);
+      return `${data.symbol} is ${String(data.bias || "-").toLowerCase()} with ${data.confidence || "-"}% confidence, ${String(data.risk || "-").toLowerCase()} risk, and a ${String(data.regime || "-").toLowerCase()} regime. Forecast path implies ${move}.`;
     }
 
     function buildPath(points) {
@@ -428,10 +604,15 @@
     function renderAsset(prefix, data, chartConfig) {
       const bias = data.bias || "-";
       const risk = data.risk || "-";
-      document.getElementById(`${prefix}Meta`).textContent = `${data.source_symbol || "-"} • ${data.interval || "-"} • ${data.pred_len || "-"} bars`;
+      const updatedText = data.updated_at ? new Date(data.updated_at).toLocaleString() : "Latest local signal";
+      document.getElementById(`${prefix}Meta`).textContent = `${data.source_symbol || "-"} • ${data.interval || "-"} • ${data.pred_len || "-"} bars • ${updatedText}`;
       const badge = document.getElementById(`${prefix}Badge`);
       badge.className = badgeClass(bias, risk);
       badge.textContent = `${bias} / ${risk}`;
+      const setup = classifySetup(data);
+      const setupEl = document.getElementById(`${prefix}Status`);
+      setupEl.textContent = setup.label;
+      setupEl.className = `asset-status ${setup.badge.replace("badge ", "")}`;
 
       const biasEl = document.getElementById(`${prefix}Bias`);
       biasEl.className = `mini-value ${metricTone(bias)}`;
@@ -454,6 +635,40 @@
       document.getElementById(`${prefix}Note`).textContent = data.note || "No note attached to this signal.";
 
       renderChart(chartConfig.svgId, data.recent_closes, data.forecast_closes, chartConfig.recentColor, chartConfig.forecastColor, chartConfig.baselineColor, chartConfig.gradientId);
+    }
+
+    function renderSummary(signals) {
+      const scored = signals.map((data) => ({
+        data,
+        score: scoreSignal(data),
+        setup: classifySetup(data)
+      })).sort((a, b) => b.score - a.score);
+
+      const top = scored[0];
+      const second = scored[1];
+      if (!top) return;
+
+      const comparison = second
+        ? `${top.data.symbol} currently ranks above ${second.data.symbol} by ${Math.max(1, top.score - second.score)} points in our simple Phase 1 read.`
+        : `${top.data.symbol} is the only live asset loaded right now.`;
+
+      els.summaryLead.textContent = `${comparison} ${assetSentence(top.data)}`;
+      els.winnerTitle.textContent = `${top.data.symbol} looks strongest right now`;
+      els.winnerNote.textContent = `${assetSentence(top.data)} ${second ? `Next closest is ${second.data.symbol}.` : ""}`.trim();
+      els.winnerBadge.className = top.setup.badge;
+      els.winnerBadge.textContent = `${top.setup.label} • ${top.score} pts`;
+
+      els.rankList.innerHTML = scored.map((item, index) => `
+        <div class="rank-row">
+          <div class="rank-num">${index + 1}</div>
+          <div>
+            <div class="rank-name">${item.data.symbol}</div>
+            <div class="rank-score">${item.data.bias} • ${item.data.regime} • ${item.data.confidence}% confidence</div>
+          </div>
+          <div class="rank-score">${item.score} pts</div>
+          <div class="${item.setup.badge}">${item.setup.label}</div>
+        </div>
+      `).join("");
     }
 
     async function fetchSignal(url) {
@@ -488,6 +703,7 @@
           baselineColor: "rgba(108,100,87,0.18)",
           gradientId: "btcFill"
         });
+        renderSummary([xau, btc]);
         els.updatedLine.textContent = new Date().toLocaleString();
       } catch (error) {
         setError(error.message || "Failed to load Kronos overview");
