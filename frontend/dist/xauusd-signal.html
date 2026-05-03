@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>XAUUSD Signal | QuantDinger</title>
+  <style>
+    :root {
+      --bg: #f4f1e8;
+      --card: rgba(255, 252, 245, 0.92);
+      --border: rgba(64, 48, 24, 0.12);
+      --text: #1e1b16;
+      --muted: #6c6457;
+      --gold: #b68b2c;
+      --gold-soft: #efe2b5;
+      --green: #1f8f62;
+      --red: #c84d3a;
+      --amber: #c4861b;
+      --shadow: 0 18px 50px rgba(56, 42, 21, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "SF Pro Display", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 221, 128, 0.45), transparent 28%),
+        radial-gradient(circle at top right, rgba(170, 210, 185, 0.35), transparent 30%),
+        linear-gradient(180deg, #fbf8f1 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-main {
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -60px auto;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(182, 139, 44, 0.18) 0%, rgba(182, 139, 44, 0) 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(182, 139, 44, 0.12);
+      color: #745310;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(32px, 4vw, 52px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .hero-side {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background:
+        linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(249,241,217,0.92) 100%);
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .badge.ok { background: rgba(31, 143, 98, 0.12); color: var(--green); }
+    .badge.warn { background: rgba(196, 134, 27, 0.14); color: var(--amber); }
+    .badge.down { background: rgba(200, 77, 58, 0.12); color: var(--red); }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button, a.action {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    button:hover, a.action:hover { transform: translateY(-1px); }
+
+    .primary {
+      background: linear-gradient(135deg, #c4982a 0%, #9c7420 100%);
+      color: #fffaf1;
+      box-shadow: 0 10px 26px rgba(156, 116, 32, 0.26);
+    }
+
+    .secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .metric {
+      padding: 22px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .metric-value {
+      font-size: clamp(24px, 3vw, 38px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .metric-sub {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .metric.bull .metric-value { color: var(--green); }
+    .metric.bear .metric-value { color: var(--red); }
+    .metric.neutral .metric-value { color: var(--amber); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .detail-card {
+      padding: 24px;
+    }
+
+    .detail-card h2 {
+      margin: 0 0 16px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+    .chart-card {
+      padding: 24px;
+      margin-bottom: 22px;
+    }
+    .chart-card h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+    .chart-card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .chart-shell {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247, 242, 230, 0.96));
+      border: 1px solid rgba(64, 48, 24, 0.08);
+      padding: 14px;
+    }
+    .chart-svg {
+      width: 100%;
+      height: 280px;
+      display: block;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .chart-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-line {
+      width: 20px;
+      height: 3px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed rgba(64, 48, 24, 0.14);
+      font-size: 15px;
+    }
+
+    .detail-item:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .detail-key { color: var(--muted); }
+    .detail-val { font-weight: 700; text-align: right; }
+
+    .note {
+      padding: 24px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.96), rgba(248, 245, 235, 0.96));
+    }
+
+    .note p {
+      margin: 0;
+      color: #473f35;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .error-box {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(200, 77, 58, 0.08);
+      border: 1px solid rgba(200, 77, 58, 0.16);
+      color: #8a2e22;
+      font-size: 14px;
+    }
+
+    @media (max-width: 960px) {
+      .hero,
+      .grid,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="panel hero-main">
+        <div class="eyebrow">AI Market Layer</div>
+        <h1>XAUUSD Signal Board</h1>
+        <p class="subtitle">
+          Kronos forecast is now flowing into QuantDinger as a lightweight gold signal board.
+          This page is your Phase 1 control room for bias, regime, confidence, and risk.
+        </p>
+        <div class="cta-row">
+          <button class="primary" id="refreshBtn">Refresh Signal</button>
+          <a class="action secondary" href="/kronos-overview.html">Open Overview</a>
+          <a class="action secondary" href="/btcusd-signal.html">Open BTC Board</a>
+          <a class="action secondary" href="/">Open QuantDinger</a>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+
+      <aside class="panel hero-side">
+        <div>
+          <div class="status-line">
+            <span>Asset</span>
+            <strong id="symbolLine">XAUUSD</strong>
+          </div>
+          <div class="status-line">
+            <span>Market Source</span>
+            <strong id="sourceLine">GC=F</strong>
+          </div>
+          <div class="status-line">
+            <span>Updated</span>
+            <strong id="updatedLine">Loading...</strong>
+          </div>
+        </div>
+        <div>
+          <div class="badge ok" id="statusBadge">Signal Ready</div>
+          <div class="footer-note" id="summaryLine">Waiting for latest market read...</div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="grid">
+      <article class="panel metric" id="biasCard">
+        <div class="metric-label">Bias</div>
+        <div class="metric-value" id="biasValue">-</div>
+        <div class="metric-sub" id="returnValue">Forecast move: -</div>
+      </article>
+      <article class="panel metric neutral">
+        <div class="metric-label">Regime</div>
+        <div class="metric-value" id="regimeValue">-</div>
+        <div class="metric-sub" id="intervalValue">Timeframe: -</div>
+      </article>
+      <article class="panel metric neutral">
+        <div class="metric-label">Confidence</div>
+        <div class="metric-value" id="confidenceValue">-</div>
+        <div class="metric-sub" id="lookbackValue">Lookback: -</div>
+      </article>
+      <article class="panel metric neutral" id="riskCard">
+        <div class="metric-label">Risk</div>
+        <div class="metric-value" id="riskValue">-</div>
+        <div class="metric-sub" id="volValue">Recent vol: -</div>
+      </article>
+    </section>
+
+    <section class="panel chart-card">
+      <h2>Price Context</h2>
+      <p>Recent 48 hours of price action with the Kronos forecast path plotted forward.</p>
+      <div class="chart-shell">
+        <svg class="chart-svg" id="priceChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="chart-legend">
+        <span><i class="legend-line" style="background:#b68b2c"></i>Recent close</span>
+        <span><i class="legend-line" style="background:#c84d3a"></i>Kronos forecast</span>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <article class="panel detail-card">
+        <h2>Forecast Details</h2>
+        <div class="detail-list">
+          <div class="detail-item"><span class="detail-key">Current Close</span><span class="detail-val" id="currentClose">-</span></div>
+          <div class="detail-item"><span class="detail-key">Predicted Close</span><span class="detail-val" id="predictedClose">-</span></div>
+          <div class="detail-item"><span class="detail-key">Forecast Horizon</span><span class="detail-val" id="predLen">-</span></div>
+          <div class="detail-item"><span class="detail-key">Proxy Symbol</span><span class="detail-val" id="proxySymbol">-</span></div>
+        </div>
+      </article>
+
+      <article class="panel note">
+        <h2>Agent Note</h2>
+        <p id="agentNote">
+          Waiting for the first synced note from the XAUUSD signal adapter.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const els = {
+      refreshBtn: document.getElementById("refreshBtn"),
+      errorBox: document.getElementById("errorBox"),
+      symbolLine: document.getElementById("symbolLine"),
+      sourceLine: document.getElementById("sourceLine"),
+      updatedLine: document.getElementById("updatedLine"),
+      statusBadge: document.getElementById("statusBadge"),
+      summaryLine: document.getElementById("summaryLine"),
+      biasCard: document.getElementById("biasCard"),
+      biasValue: document.getElementById("biasValue"),
+      returnValue: document.getElementById("returnValue"),
+      regimeValue: document.getElementById("regimeValue"),
+      intervalValue: document.getElementById("intervalValue"),
+      confidenceValue: document.getElementById("confidenceValue"),
+      lookbackValue: document.getElementById("lookbackValue"),
+      riskCard: document.getElementById("riskCard"),
+      riskValue: document.getElementById("riskValue"),
+      volValue: document.getElementById("volValue"),
+      currentClose: document.getElementById("currentClose"),
+      predictedClose: document.getElementById("predictedClose"),
+      predLen: document.getElementById("predLen"),
+      proxySymbol: document.getElementById("proxySymbol"),
+      agentNote: document.getElementById("agentNote"),
+      priceChart: document.getElementById("priceChart")
+    };
+
+    function setError(message) {
+      if (!message) {
+        els.errorBox.style.display = "none";
+        els.errorBox.textContent = "";
+        return;
+      }
+      els.errorBox.style.display = "block";
+      els.errorBox.textContent = message;
+    }
+
+    function formatNumber(value, digits = 2) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return "-";
+      return num.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function formatPercent(value, digits = 2) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return "-";
+      return `${num.toFixed(digits)}%`;
+    }
+    function buildPath(points) {
+      return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0].toFixed(2)} ${point[1].toFixed(2)}`).join(" ");
+    }
+    function renderChart(recentCloses, forecastCloses) {
+      const svg = els.priceChart;
+      if (!svg) return;
+      const width = 900;
+      const height = 280;
+      const pad = { top: 18, right: 18, bottom: 28, left: 18 };
+      const recent = Array.isArray(recentCloses) ? recentCloses.map(Number).filter(Number.isFinite) : [];
+      const forecast = Array.isArray(forecastCloses) ? forecastCloses.map(Number).filter(Number.isFinite) : [];
+      const all = recent.concat(forecast);
+      if (all.length < 2) {
+        svg.innerHTML = "";
+        return;
+      }
+      const min = Math.min(...all);
+      const max = Math.max(...all);
+      const span = Math.max(max - min, Math.abs(max) * 0.003, 1);
+      const y = (value) => pad.top + (height - pad.top - pad.bottom) * (1 - ((value - min) / span));
+      const recentStep = recent.length > 1 ? (width * 0.72 - pad.left - pad.right) / (recent.length - 1) : 0;
+      const forecastStartX = pad.left + Math.max(0, recent.length - 1) * recentStep;
+      const forecastStep = forecast.length > 1 ? (width - forecastStartX - pad.right) / (forecast.length - 1) : 0;
+      const recentPoints = recent.map((value, index) => [pad.left + index * recentStep, y(value)]);
+      const forecastPoints = forecast.map((value, index) => [forecastStartX + index * forecastStep, y(value)]);
+      const lastRecent = recentPoints[recentPoints.length - 1];
+      const baseLine = y(recent[recent.length - 1]);
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="recentFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="rgba(182,139,44,0.26)"/>
+            <stop offset="100%" stop-color="rgba(182,139,44,0.02)"/>
+          </linearGradient>
+        </defs>
+        <line x1="${pad.left}" y1="${baseLine.toFixed(2)}" x2="${(width - pad.right).toFixed(2)}" y2="${baseLine.toFixed(2)}" stroke="rgba(108,100,87,0.18)" stroke-dasharray="4 6"/>
+        <path d="${buildPath(recentPoints)} L ${lastRecent[0].toFixed(2)} ${(height - pad.bottom).toFixed(2)} L ${pad.left.toFixed(2)} ${(height - pad.bottom).toFixed(2)} Z" fill="url(#recentFill)"/>
+        <path d="${buildPath(recentPoints)}" fill="none" stroke="#b68b2c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${buildPath([lastRecent].concat(forecastPoints.slice(1)))}" fill="none" stroke="#c84d3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 8"/>
+        <circle cx="${lastRecent[0].toFixed(2)}" cy="${lastRecent[1].toFixed(2)}" r="5" fill="#b68b2c"/>
+        <circle cx="${forecastPoints[forecastPoints.length - 1][0].toFixed(2)}" cy="${forecastPoints[forecastPoints.length - 1][1].toFixed(2)}" r="5" fill="#c84d3a"/>
+      `;
+    }
+
+    function statusClass(text) {
+      const value = String(text || "").toLowerCase();
+      if (value.includes("bull")) return "ok";
+      if (value.includes("bear")) return "down";
+      if (value.includes("high")) return "down";
+      if (value.includes("caution")) return "warn";
+      return "warn";
+    }
+
+    function metricClass(text) {
+      const value = String(text || "").toLowerCase();
+      if (value.includes("bull")) return "metric bull";
+      if (value.includes("bear")) return "metric bear";
+      return "metric neutral";
+    }
+
+    async function loadSignal() {
+      setError("");
+      els.refreshBtn.disabled = true;
+      els.refreshBtn.textContent = "Refreshing...";
+      try {
+        const response = await fetch("/api/dashboard/public/xauusd-signal", { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok || payload.code !== 1 || !payload.data) {
+          throw new Error(payload.msg || "Failed to load XAUUSD signal");
+        }
+        renderSignal(payload.data);
+      } catch (error) {
+        setError(error.message || "Failed to load XAUUSD signal");
+      } finally {
+        els.refreshBtn.disabled = false;
+        els.refreshBtn.textContent = "Refresh Signal";
+      }
+    }
+
+    function renderSignal(data) {
+      const bias = data.bias || "-";
+      const risk = data.risk || "-";
+      const regime = data.regime || "-";
+      const confidence = Number(data.confidence);
+      const forecastReturn = Number(data.forecast_return_pct);
+      const realizedVol = Number(data.realized_vol_pct);
+
+      els.symbolLine.textContent = data.symbol || "XAUUSD";
+      els.sourceLine.textContent = data.source_symbol || "-";
+      els.updatedLine.textContent = new Date().toLocaleString();
+      els.statusBadge.className = `badge ${statusClass(bias)}`;
+      els.statusBadge.textContent = `${bias} / ${risk}`;
+      els.summaryLine.textContent = `${regime} regime with ${formatPercent(realizedVol)} recent volatility`;
+
+      els.biasCard.className = `panel ${metricClass(bias)}`;
+      els.biasValue.textContent = bias;
+      els.returnValue.textContent = `Forecast move: ${formatPercent(forecastReturn)}`;
+
+      els.regimeValue.textContent = regime;
+      els.intervalValue.textContent = `Timeframe: ${data.interval || "-"}`;
+
+      els.confidenceValue.textContent = Number.isFinite(confidence) ? `${confidence}%` : "-";
+      els.lookbackValue.textContent = `Lookback: ${data.lookback || "-"} candles`;
+
+      els.riskCard.className = `panel ${metricClass(risk)}`;
+      els.riskValue.textContent = risk;
+      els.volValue.textContent = `Recent vol: ${formatPercent(realizedVol)}`;
+
+      els.currentClose.textContent = formatNumber(data.current_close, 2);
+      els.predictedClose.textContent = formatNumber(data.predicted_close, 2);
+      els.predLen.textContent = `${data.pred_len || "-"} bars`;
+      els.proxySymbol.textContent = data.source_symbol || "-";
+      els.agentNote.textContent = data.note || "No note attached to this forecast.";
+      renderChart(data.recent_closes, data.forecast_closes);
+    }
+
+    els.refreshBtn.addEventListener("click", loadSignal);
+    loadSignal();
+    setInterval(loadSignal, 300000);
+  </script>
+</body>
+</html>

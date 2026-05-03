@@ -98,6 +98,8 @@ services:
       - backend_data:/app/data
       # Mount .env for runtime config and admin-panel updates
       - ./backend_api_python/.env:/app/.env
+      # Shared local signal outputs generated outside the backend container
+      - ../integration/output:/app/shared_signals
     environment:
       - PYTHON_API_HOST=0.0.0.0
       - PYTHON_API_PORT=5000

@@ -12,6 +12,7 @@ Notes:
 from __future__ import annotations
 
 import json
+import os
 import time
 from typing import Any, Dict, List, Tuple
 
@@ -24,6 +25,7 @@ from app.utils.auth import login_required
 logger = get_logger(__name__)
 
 dashboard_bp = Blueprint("dashboard", __name__)
+SHARED_SIGNAL_DIR = os.getenv("SHARED_SIGNAL_DIR", "/app/shared_signals")
 
 
 def _safe_int(v: Any, default: int) -> int:
@@ -82,6 +84,67 @@ def _as_list(value: Any) -> List[str]:
             return [p.strip() for p in s.split(",") if p.strip()]
         return [s]
     return []
+
+
+def _load_shared_signal(filename: str) -> Dict[str, Any]:
+    path = os.path.join(SHARED_SIGNAL_DIR, filename)
+    if not os.path.exists(path):
+        raise FileNotFoundError(path)
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"Signal file must contain a JSON object: {path}")
+    return data
+
+
+@dashboard_bp.route("/xauusd-signal", methods=["GET"])
+@login_required
+def get_xauusd_signal():
+    try:
+        data = _load_shared_signal("xauusd_signal.json")
+        return jsonify({"code": 1, "msg": "success", "data": data})
+    except FileNotFoundError:
+        return jsonify({"code": 0, "msg": "XAUUSD signal not generated yet", "data": None}), 404
+    except Exception as e:
+        logger.error(f"get_xauusd_signal failed: {e}")
+        return jsonify({"code": 0, "msg": "Failed to load XAUUSD signal", "data": None}), 500
+
+
+@dashboard_bp.route("/btcusd-signal", methods=["GET"])
+@login_required
+def get_btcusd_signal():
+    try:
+        data = _load_shared_signal("btcusd_signal.json")
+        return jsonify({"code": 1, "msg": "success", "data": data})
+    except FileNotFoundError:
+        return jsonify({"code": 0, "msg": "BTCUSD signal not generated yet", "data": None}), 404
+    except Exception as e:
+        logger.error(f"get_btcusd_signal failed: {e}")
+        return jsonify({"code": 0, "msg": "Failed to load BTCUSD signal", "data": None}), 500
+
+
+@dashboard_bp.route("/public/xauusd-signal", methods=["GET"])
+def get_public_xauusd_signal():
+    try:
+        data = _load_shared_signal("xauusd_signal.json")
+        return jsonify({"code": 1, "msg": "success", "data": data})
+    except FileNotFoundError:
+        return jsonify({"code": 0, "msg": "XAUUSD signal not generated yet", "data": None}), 404
+    except Exception as e:
+        logger.error(f"get_public_xauusd_signal failed: {e}")
+        return jsonify({"code": 0, "msg": "Failed to load XAUUSD signal", "data": None}), 500
+
+
+@dashboard_bp.route("/public/btcusd-signal", methods=["GET"])
+def get_public_btcusd_signal():
+    try:
+        data = _load_shared_signal("btcusd_signal.json")
+        return jsonify({"code": 1, "msg": "success", "data": data})
+    except FileNotFoundError:
+        return jsonify({"code": 0, "msg": "BTCUSD signal not generated yet", "data": None}), 404
+    except Exception as e:
+        logger.error(f"get_public_btcusd_signal failed: {e}")
+        return jsonify({"code": 0, "msg": "Failed to load BTCUSD signal", "data": None}), 500
 
 
 def _is_bot_strategy(row: Dict[str, Any]) -> bool:

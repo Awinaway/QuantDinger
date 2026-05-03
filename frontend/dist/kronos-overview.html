@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kronos Overview | QuantDinger</title>
+  <style>
+    :root {
+      --bg: #f1eee6;
+      --card: rgba(255, 252, 245, 0.94);
+      --border: rgba(55, 42, 18, 0.10);
+      --text: #1f1b14;
+      --muted: #6e6658;
+      --gold: #b68b2c;
+      --btc: #f59f0a;
+      --green: #2f9b6b;
+      --red: #c55340;
+      --amber: #bd8823;
+      --shadow: 0 18px 48px rgba(52, 39, 19, 0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "SF Pro Display", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 215, 123, 0.34), transparent 26%),
+        radial-gradient(circle at top right, rgba(157, 214, 190, 0.24), transparent 28%),
+        linear-gradient(180deg, #fbf8f2 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+    .hero, .asset-grid {
+      display: grid;
+      gap: 22px;
+    }
+    .hero { grid-template-columns: 1.2fr 0.8fr; margin-bottom: 22px; }
+    .asset-grid { grid-template-columns: 1fr 1fr; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .hero-main, .hero-side, .asset-card { padding: 26px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(182, 139, 44, 0.12);
+      color: #745310;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+    }
+    .subtitle, .hero-side p, .asset-meta, .legend, .mini-label { color: var(--muted); }
+    .subtitle { margin: 0; max-width: 720px; font-size: 16px; line-height: 1.6; }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    a.action, button.action {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      cursor: pointer;
+      text-decoration: none;
+      font: inherit;
+      transition: transform .18s ease;
+    }
+    a.action:hover, button.action:hover { transform: translateY(-1px); }
+    .primary {
+      background: linear-gradient(135deg, #c4982a 0%, #9f7822 100%);
+      color: #fffaf2;
+      box-shadow: 0 10px 24px rgba(160, 119, 34, 0.22);
+    }
+    .secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .hero-side {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(160deg, rgba(255,255,255,0.96) 0%, rgba(246, 239, 222, 0.94) 100%);
+    }
+    .hero-side h2 { margin: 0 0 12px; font-size: 20px; letter-spacing: -0.03em; }
+    .hero-side p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; }
+    .asset-card {
+      display: grid;
+      gap: 18px;
+    }
+    .asset-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .asset-title {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+    .asset-meta {
+      margin-top: 6px;
+      font-size: 13px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .badge.ok { background: rgba(47, 155, 107, 0.12); color: var(--green); }
+    .badge.warn { background: rgba(189, 136, 35, 0.14); color: var(--amber); }
+    .badge.down { background: rgba(197, 83, 64, 0.12); color: var(--red); }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .mini-metric {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.66);
+      border: 1px solid rgba(55, 42, 18, 0.07);
+    }
+    .mini-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .mini-value {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    .mini-sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .bull { color: var(--green); }
+    .bear { color: var(--red); }
+    .neutral { color: var(--amber); }
+    .chart-shell {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(55, 42, 18, 0.07);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247, 242, 230, 0.96));
+      padding: 14px;
+    }
+    .chart-svg {
+      width: 100%;
+      height: 240px;
+      display: block;
+    }
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-line {
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .asset-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .note {
+      flex: 1 1 320px;
+      color: #473f35;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .error-box {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(197, 83, 64, 0.08);
+      border: 1px solid rgba(197, 83, 64, 0.16);
+      color: #8f3427;
+      font-size: 14px;
+    }
+    @media (max-width: 960px) {
+      .hero, .asset-grid, .mini-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="panel hero-main">
+        <div class="eyebrow">Phase 1 Dashboard</div>
+        <h1>Kronos Overview</h1>
+        <p class="subtitle">
+          One page for the current Gold and Bitcoin market reads. This is the Phase 1 overview for bias, regime,
+          confidence, risk, and near-term forecast context before we move into Phase 2 research.
+        </p>
+        <div class="cta-row">
+          <button class="action primary" id="refreshBtn">Refresh All Signals</button>
+          <a class="action secondary" href="/xauusd-signal.html">Open Gold Board</a>
+          <a class="action secondary" href="/btcusd-signal.html">Open BTC Board</a>
+          <a class="action secondary" href="/">Open QuantDinger</a>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+      <aside class="panel hero-side">
+        <div>
+          <h2>How To Use This</h2>
+          <p>Look for assets with clear bias, higher confidence, and lower risk.</p>
+          <p>Range plus low confidence means watch mode. Trend plus stronger confidence means more interesting.</p>
+        </div>
+        <div>
+          <h2>Updated</h2>
+          <p id="updatedLine">Loading...</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="asset-grid">
+      <article class="panel asset-card" id="xauCard">
+        <div class="asset-head">
+          <div>
+            <h2 class="asset-title">XAUUSD</h2>
+            <div class="asset-meta" id="xauMeta">Loading...</div>
+          </div>
+          <div class="badge warn" id="xauBadge">Loading...</div>
+        </div>
+        <div class="mini-grid">
+          <div class="mini-metric">
+            <div class="mini-label">Bias</div>
+            <div class="mini-value neutral" id="xauBias">-</div>
+            <div class="mini-sub" id="xauMove">-</div>
+          </div>
+          <div class="mini-metric">
+            <div class="mini-label">Regime</div>
+            <div class="mini-value neutral" id="xauRegime">-</div>
+            <div class="mini-sub" id="xauTf">-</div>
+          </div>
+          <div class="mini-metric">
+            <div class="mini-label">Confidence</div>
+            <div class="mini-value neutral" id="xauConfidence">-</div>
+            <div class="mini-sub" id="xauLookback">-</div>
+          </div>
+          <div class="mini-metric">
+            <div class="mini-label">Risk</div>
+            <div class="mini-value neutral" id="xauRisk">-</div>
+            <div class="mini-sub" id="xauVol">-</div>
+          </div>
+        </div>
+        <div class="chart-shell">
+          <svg class="chart-svg" id="xauChart" viewBox="0 0 900 240" preserveAspectRatio="none"></svg>
+          <div class="legend">
+            <span><i class="legend-line" style="background:#b68b2c"></i>Recent close</span>
+            <span><i class="legend-line" style="background:#c55340"></i>Kronos forecast</span>
+          </div>
+        </div>
+        <div class="asset-foot">
+          <div class="note" id="xauNote">Waiting for XAUUSD signal...</div>
+          <a class="action secondary" href="/xauusd-signal.html">Full Gold Board</a>
+        </div>
+      </article>
+
+      <article class="panel asset-card" id="btcCard">
+        <div class="asset-head">
+          <div>
+            <h2 class="asset-title">BTCUSD</h2>
+            <div class="asset-meta" id="btcMeta">Loading...</div>
+          </div>
+          <div class="badge warn" id="btcBadge">Loading...</div>
+        </div>
+        <div class="mini-grid">
+          <div class="mini-metric">
+            <div class="mini-label">Bias</div>
+            <div class="mini-value neutral" id="btcBias">-</div>
+            <div class="mini-sub" id="btcMove">-</div>
+          </div>
+          <div class="mini-metric">
+            <div class="mini-label">Regime</div>
+            <div class="mini-value neutral" id="btcRegime">-</div>
+            <div class="mini-sub" id="btcTf">-</div>
+          </div>
+          <div class="mini-metric">
+            <div class="mini-label">Confidence</div>
+            <div class="mini-value neutral" id="btcConfidence">-</div>
+            <div class="mini-sub" id="btcLookback">-</div>
+          </div>
+          <div class="mini-metric">
+            <div class="mini-label">Risk</div>
+            <div class="mini-value neutral" id="btcRisk">-</div>
+            <div class="mini-sub" id="btcVol">-</div>
+          </div>
+        </div>
+        <div class="chart-shell">
+          <svg class="chart-svg" id="btcChart" viewBox="0 0 900 240" preserveAspectRatio="none"></svg>
+          <div class="legend">
+            <span><i class="legend-line" style="background:#f59f0a"></i>Recent close</span>
+            <span><i class="legend-line" style="background:#ff6b6b"></i>Kronos forecast</span>
+          </div>
+        </div>
+        <div class="asset-foot">
+          <div class="note" id="btcNote">Waiting for BTCUSD signal...</div>
+          <a class="action secondary" href="/btcusd-signal.html">Full BTC Board</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const els = {
+      refreshBtn: document.getElementById("refreshBtn"),
+      errorBox: document.getElementById("errorBox"),
+      updatedLine: document.getElementById("updatedLine")
+    };
+
+    function setError(message) {
+      if (!message) {
+        els.errorBox.style.display = "none";
+        els.errorBox.textContent = "";
+        return;
+      }
+      els.errorBox.style.display = "block";
+      els.errorBox.textContent = message;
+    }
+
+    function fmtPercent(value, digits = 2) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return "-";
+      return `${num.toFixed(digits)}%`;
+    }
+
+    function metricTone(value) {
+      const text = String(value || "").toLowerCase();
+      if (text.includes("bull")) return "bull";
+      if (text.includes("bear")) return "bear";
+      return "neutral";
+    }
+
+    function badgeClass(bias, risk) {
+      const text = `${bias} ${risk}`.toLowerCase();
+      if (text.includes("bear") || text.includes("high")) return "badge down";
+      if (text.includes("bull")) return "badge ok";
+      return "badge warn";
+    }
+
+    function buildPath(points) {
+      return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0].toFixed(2)} ${point[1].toFixed(2)}`).join(" ");
+    }
+
+    function renderChart(svgId, recentCloses, forecastCloses, recentColor, forecastColor, baselineColor, gradientId) {
+      const svg = document.getElementById(svgId);
+      if (!svg) return;
+      const width = 900;
+      const height = 240;
+      const pad = { top: 16, right: 16, bottom: 20, left: 16 };
+      const recent = Array.isArray(recentCloses) ? recentCloses.map(Number).filter(Number.isFinite) : [];
+      const forecast = Array.isArray(forecastCloses) ? forecastCloses.map(Number).filter(Number.isFinite) : [];
+      const all = recent.concat(forecast);
+      if (all.length < 2) {
+        svg.innerHTML = "";
+        return;
+      }
+      const min = Math.min(...all);
+      const max = Math.max(...all);
+      const span = Math.max(max - min, Math.abs(max) * 0.003, 1);
+      const y = (value) => pad.top + (height - pad.top - pad.bottom) * (1 - ((value - min) / span));
+      const recentStep = recent.length > 1 ? (width * 0.72 - pad.left - pad.right) / (recent.length - 1) : 0;
+      const forecastStartX = pad.left + Math.max(0, recent.length - 1) * recentStep;
+      const forecastStep = forecast.length > 1 ? (width - forecastStartX - pad.right) / (forecast.length - 1) : 0;
+      const recentPoints = recent.map((value, index) => [pad.left + index * recentStep, y(value)]);
+      const forecastPoints = forecast.map((value, index) => [forecastStartX + index * forecastStep, y(value)]);
+      const lastRecent = recentPoints[recentPoints.length - 1];
+      const baseline = y(recent[recent.length - 1]);
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="${gradientId}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${recentColor}" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="${recentColor}" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <line x1="${pad.left}" y1="${baseline.toFixed(2)}" x2="${(width - pad.right).toFixed(2)}" y2="${baseline.toFixed(2)}" stroke="${baselineColor}" stroke-dasharray="4 6"/>
+        <path d="${buildPath(recentPoints)} L ${lastRecent[0].toFixed(2)} ${(height - pad.bottom).toFixed(2)} L ${pad.left.toFixed(2)} ${(height - pad.bottom).toFixed(2)} Z" fill="url(#${gradientId})"/>
+        <path d="${buildPath(recentPoints)}" fill="none" stroke="${recentColor}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${buildPath([lastRecent].concat(forecastPoints.slice(1)))}" fill="none" stroke="${forecastColor}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 8"/>
+        <circle cx="${lastRecent[0].toFixed(2)}" cy="${lastRecent[1].toFixed(2)}" r="5" fill="${recentColor}"/>
+        <circle cx="${forecastPoints[forecastPoints.length - 1][0].toFixed(2)}" cy="${forecastPoints[forecastPoints.length - 1][1].toFixed(2)}" r="5" fill="${forecastColor}"/>
+      `;
+    }
+
+    function renderAsset(prefix, data, chartConfig) {
+      const bias = data.bias || "-";
+      const risk = data.risk || "-";
+      document.getElementById(`${prefix}Meta`).textContent = `${data.source_symbol || "-"} • ${data.interval || "-"} • ${data.pred_len || "-"} bars`;
+      const badge = document.getElementById(`${prefix}Badge`);
+      badge.className = badgeClass(bias, risk);
+      badge.textContent = `${bias} / ${risk}`;
+
+      const biasEl = document.getElementById(`${prefix}Bias`);
+      biasEl.className = `mini-value ${metricTone(bias)}`;
+      biasEl.textContent = bias;
+      document.getElementById(`${prefix}Move`).textContent = `Forecast ${fmtPercent(data.forecast_return_pct)}`;
+
+      const regimeEl = document.getElementById(`${prefix}Regime`);
+      regimeEl.className = `mini-value ${metricTone(data.regime)}`;
+      regimeEl.textContent = data.regime || "-";
+      document.getElementById(`${prefix}Tf`).textContent = `Timeframe ${data.interval || "-"}`;
+
+      document.getElementById(`${prefix}Confidence`).textContent = Number.isFinite(Number(data.confidence)) ? `${data.confidence}%` : "-";
+      document.getElementById(`${prefix}Lookback`).textContent = `Lookback ${data.lookback || "-"} candles`;
+
+      const riskEl = document.getElementById(`${prefix}Risk`);
+      riskEl.className = `mini-value ${metricTone(risk)}`;
+      riskEl.textContent = risk;
+      document.getElementById(`${prefix}Vol`).textContent = `Recent vol ${fmtPercent(data.realized_vol_pct)}`;
+
+      document.getElementById(`${prefix}Note`).textContent = data.note || "No note attached to this signal.";
+
+      renderChart(chartConfig.svgId, data.recent_closes, data.forecast_closes, chartConfig.recentColor, chartConfig.forecastColor, chartConfig.baselineColor, chartConfig.gradientId);
+    }
+
+    async function fetchSignal(url) {
+      const response = await fetch(url, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok || payload.code !== 1 || !payload.data) {
+        throw new Error(payload.msg || `Failed to load ${url}`);
+      }
+      return payload.data;
+    }
+
+    async function loadAll() {
+      setError("");
+      els.refreshBtn.disabled = true;
+      els.refreshBtn.textContent = "Refreshing...";
+      try {
+        const [xau, btc] = await Promise.all([
+          fetchSignal("/api/dashboard/public/xauusd-signal"),
+          fetchSignal("/api/dashboard/public/btcusd-signal")
+        ]);
+        renderAsset("xau", xau, {
+          svgId: "xauChart",
+          recentColor: "#b68b2c",
+          forecastColor: "#c55340",
+          baselineColor: "rgba(108,100,87,0.18)",
+          gradientId: "xauFill"
+        });
+        renderAsset("btc", btc, {
+          svgId: "btcChart",
+          recentColor: "#f59f0a",
+          forecastColor: "#ff6b6b",
+          baselineColor: "rgba(108,100,87,0.18)",
+          gradientId: "btcFill"
+        });
+        els.updatedLine.textContent = new Date().toLocaleString();
+      } catch (error) {
+        setError(error.message || "Failed to load Kronos overview");
+      } finally {
+        els.refreshBtn.disabled = false;
+        els.refreshBtn.textContent = "Refresh All Signals";
+      }
+    }
+
+    els.refreshBtn.addEventListener("click", loadAll);
+    loadAll();
+    setInterval(loadAll, 300000);
+  </script>
+</body>
+</html>
