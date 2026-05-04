@@ -31,12 +31,12 @@ class LLMProvider(Enum):
 PROVIDER_CONFIGS = {
     LLMProvider.OPENROUTER: {
         "base_url": "https://openrouter.ai/api/v1",
-        "default_model": "openai/gpt-4o",
+        "default_model": "openai/gpt-4.1-mini",
         "fallback_model": "openai/gpt-4o-mini",
     },
     LLMProvider.OPENAI: {
         "base_url": "https://api.openai.com/v1",
-        "default_model": "gpt-4o",
+        "default_model": "gpt-4.1-mini",
         "fallback_model": "gpt-4o-mini",
     },
     LLMProvider.GOOGLE: {

@@ -159,10 +159,10 @@ CONFIG_SCHEMA = {
                 'key': 'OPENROUTER_MODEL',
                 'label': 'OpenRouter Model',
                 'type': 'text',
-                'default': 'openai/gpt-4o',
+                'default': 'openai/gpt-4.1-mini',
                 'link': 'https://openrouter.ai/models',
                 'link_text': 'settings.link.viewModels',
-                'description': 'Model ID, e.g. openai/gpt-4o, anthropic/claude-3.5-sonnet',
+                'description': 'Recommended: openai/gpt-4.1-mini. Other examples: openai/gpt-4o-mini, anthropic/claude-sonnet-4',
                 'group': 'openrouter'
             },
             # OpenAI Direct
@@ -180,8 +180,8 @@ CONFIG_SCHEMA = {
                 'key': 'OPENAI_MODEL',
                 'label': 'OpenAI Model',
                 'type': 'text',
-                'default': 'gpt-4o',
-                'description': 'Model name: gpt-4o, gpt-4o-mini, gpt-4-turbo, etc.',
+                'default': 'gpt-4.1-mini',
+                'description': 'Recommended: gpt-4.1-mini. Other examples: gpt-4o-mini, gpt-4.1, gpt-4o.',
                 'group': 'openai'
             },
             {
