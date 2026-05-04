@@ -76,22 +76,116 @@ def _build_trend_outlook_summary(trend_outlook: Dict[str, Any], language: str) -
 def _llm_unavailable_summary(language: str) -> str:
     is_zh = str(language or "").lower().startswith("zh")
     if is_zh:
-        return "当前显示的是客观量化分析结果；AI 文本引擎暂不可用。"
-    return "Showing objective analysis only; the AI text provider is currently unavailable."
+        return "当前显示的是客观量化分析结果；AI 解读层暂不可用。"
+    return "Objective market analysis is available; the AI commentary layer is currently unavailable."
 
 
 def _llm_unavailable_reason(language: str) -> str:
     is_zh = str(language or "").lower().startswith("zh")
     if is_zh:
-        return "AI 文本引擎未配置或暂时不可用"
-    return "AI text provider unavailable or not configured"
+        return "当前使用规则引擎输出，重点参考价格、趋势与波动信号"
+    return "This view is currently driven by the objective engine using price, trend, and volatility inputs."
 
 
 def _llm_unavailable_risk(language: str) -> str:
     is_zh = str(language or "").lower().startswith("zh")
     if is_zh:
-        return "当前结论主要基于客观规则分数，缺少 LLM 解释层"
-    return "Current result is driven mainly by objective scoring without the LLM explanation layer"
+        return "缺少 AI 解读层时，结论更适合作为规则化参考而非完整叙事判断"
+    return "Without the AI commentary layer, treat this as a structured rules-based read rather than a full narrative analysis."
+
+
+def _build_objective_fallback_reasons(data: Dict[str, Any], current_price: float, language: str) -> List[str]:
+    is_zh = str(language or "").lower().startswith("zh")
+    indicators = data.get("indicators") or {}
+    reasons: List[str] = []
+
+    ma_data = indicators.get("moving_averages") or {}
+    ma_trend = str(ma_data.get("trend") or "sideways").lower()
+    if "uptrend" in ma_trend:
+        reasons.append("均线趋势仍偏上行" if is_zh else "Moving averages still lean upward.")
+    elif "downtrend" in ma_trend:
+        reasons.append("均线趋势仍偏下行" if is_zh else "Moving averages still lean downward.")
+    else:
+        reasons.append("均线趋势偏震荡" if is_zh else "Moving-average trend still looks range-bound.")
+
+    macd_data = indicators.get("macd") or {}
+    macd_signal = str(macd_data.get("signal") or "neutral").lower()
+    macd_trend = str(macd_data.get("trend") or "").lower()
+    if macd_signal == "bullish":
+        reasons.append("MACD 动能转向偏多" if is_zh else "MACD momentum is leaning bullish.")
+    elif macd_signal == "bearish":
+        reasons.append("MACD 动能转向偏空" if is_zh else "MACD momentum is leaning bearish.")
+    elif macd_trend:
+        reasons.append(
+            "MACD 动能暂时中性" if is_zh else "MACD momentum is currently neutral."
+        )
+
+    rsi_data = indicators.get("rsi") or {}
+    rsi_value = rsi_data.get("value")
+    if isinstance(rsi_value, (int, float)):
+        if rsi_value >= 60:
+            reasons.append(
+                f"RSI({rsi_value:.1f}) 显示短线偏强" if is_zh else f"RSI ({rsi_value:.1f}) shows short-term strength."
+            )
+        elif rsi_value <= 40:
+            reasons.append(
+                f"RSI({rsi_value:.1f}) 显示短线偏弱" if is_zh else f"RSI ({rsi_value:.1f}) shows short-term weakness."
+            )
+        else:
+            reasons.append(
+                f"RSI({rsi_value:.1f}) 仍在中性区间" if is_zh else f"RSI ({rsi_value:.1f}) remains in a neutral zone."
+            )
+
+    levels = indicators.get("levels") or {}
+    support = _safe_float_price(levels.get("support"))
+    resistance = _safe_float_price(levels.get("resistance"))
+    if current_price and current_price > 0 and support is not None and resistance is not None:
+        if current_price >= resistance * 0.985:
+            reasons.append("价格接近阻力区" if is_zh else "Price is trading near resistance.")
+        elif current_price <= support * 1.015:
+            reasons.append("价格接近支撑区" if is_zh else "Price is trading near support.")
+        else:
+            reasons.append("价格位于支撑与阻力之间" if is_zh else "Price is trading between support and resistance.")
+
+    return reasons[:3] or (
+        ["当前以客观量化信号为主" if is_zh else "Objective market signals are currently driving the read."]
+    )
+
+
+def _build_objective_fallback_risks(data: Dict[str, Any], current_price: float, language: str) -> List[str]:
+    is_zh = str(language or "").lower().startswith("zh")
+    indicators = data.get("indicators") or {}
+    risks: List[str] = []
+
+    volatility = indicators.get("volatility") or {}
+    vol_level = str(volatility.get("level") or "").lower()
+    vol_pct = _safe_float_price(volatility.get("pct"))
+    if vol_level == "high" or (vol_pct is not None and vol_pct >= 3):
+        risks.append("波动偏高，信号可能反复" if is_zh else "Volatility is elevated, so signals may whipsaw.")
+    elif vol_level == "medium" or (vol_pct is not None and vol_pct >= 1.5):
+        risks.append("波动中等，追价需要更谨慎" if is_zh else "Volatility is moderate, so chasing price needs more caution.")
+
+    rsi_data = indicators.get("rsi") or {}
+    rsi_value = rsi_data.get("value")
+    if isinstance(rsi_value, (int, float)):
+        if rsi_value >= 70:
+            risks.append("RSI 处于超买区，回撤风险上升" if is_zh else "RSI is overbought, raising pullback risk.")
+        elif rsi_value <= 30:
+            risks.append("RSI 处于超卖区，反弹波动可能加大" if is_zh else "RSI is oversold, so rebound volatility may increase.")
+
+    ma_data = indicators.get("moving_averages") or {}
+    ma_trend = str(ma_data.get("trend") or "sideways").lower()
+    if "sideways" in ma_trend or "range" in ma_trend:
+        risks.append("趋势不强，容易出现区间来回扫损" if is_zh else "Trend strength is weak, so range-bound whipsaws remain a risk.")
+
+    if not risks:
+        risks.append(
+            "缺少 AI 解读层时，建议把结果当作规则化参考而不是最终判断"
+            if is_zh else
+            "With the AI commentary layer unavailable, use this as a structured reference rather than a final call."
+        )
+
+    return risks[:3]
 
 
 # -----------------------------------------------------------------------------
@@ -1222,8 +1316,8 @@ IMPORTANT:
                 "take_profit": current_price * 1.05,
                 "position_size_pct": 10,
                 "timeframe": "medium",
-                "key_reasons": [_llm_unavailable_reason(language)],
-                "risks": [_llm_unavailable_risk(language)],
+                "key_reasons": _build_objective_fallback_reasons(data, current_price, language),
+                "risks": _build_objective_fallback_risks(data, current_price, language),
                 "technical_score": 50,
                 "fundamental_score": 50,
                 "sentiment_score": 50,
