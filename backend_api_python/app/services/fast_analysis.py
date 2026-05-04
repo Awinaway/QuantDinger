@@ -73,6 +73,43 @@ def _build_trend_outlook_summary(trend_outlook: Dict[str, Any], language: str) -
     return " | ".join(parts)
 
 
+def _pick_horizon_score(objective_by_tf: Dict[str, Any], primary_tf: str, fallbacks: List[str]) -> float:
+    """Pick the nearest available timeframe score for a user-facing horizon."""
+    for tf in [primary_tf] + list(fallbacks):
+        obj = objective_by_tf.get(tf) or {}
+        score = obj.get("overall_score")
+        if score is not None:
+            try:
+                return float(score)
+            except Exception:
+                continue
+    return 0.0
+
+
+def _stabilize_horizon_score(score_val: float, regime: str, horizon: str) -> float:
+    """
+    Reduce noisy horizon swings so the native outlook reads more like an outlook
+    and less like four unrelated votes.
+    """
+    score_val = float(score_val or 0.0)
+    abs_score = abs(score_val)
+
+    if regime == "ranging":
+        if abs_score < 30:
+            return 0.0
+        if abs_score < 45:
+            return score_val * 0.6
+        return score_val * 0.8
+
+    # Longer horizons should require a bit more conviction before showing a
+    # directional call.
+    if horizon in ("next_1w", "next_1m") and abs_score < 25:
+        return 0.0
+    if horizon == "next_24h" and abs_score < 15:
+        return 0.0
+    return score_val
+
+
 def _llm_unavailable_summary(language: str) -> str:
     is_zh = str(language or "").lower().startswith("zh")
     if is_zh:
@@ -1370,15 +1407,21 @@ IMPORTANT:
             if market == "Crypto" and crypto_factor_score is not None:
                 analysis["fundamental_score"] = max(0, min(100, int(round((float(crypto_factor_score) + 100.0) / 2.0))))
 
-            # Horizon trend outlook for users (short/medium/long decision reference)
-            score_1d = float((objective_by_tf.get("1D") or {}).get("overall_score", objective_score.get("overall_score", 0.0)) or 0.0)
-            score_4h = float((objective_by_tf.get("4H") or {}).get("overall_score", score_1d) or score_1d)
-            score_1h = float((objective_by_tf.get("1H") or {}).get("overall_score", score_4h) or score_4h)
-            # ~24h: prefer 1H bar objective; fall back 4H -> 1D
-            score_24h = float(score_1h)
-            score_1w = float((objective_by_tf.get("1W") or {}).get("overall_score", score_1d) or score_1d)
-            score_3d = score_1d * 0.7 + score_4h * 0.3
-            score_1m = score_1w * 0.55 + float(objective_score.get("fundamental_score", 0.0)) * 0.30 + float(objective_score.get("macro_score", 0.0)) * 0.15
+            # Horizon trend outlook for users (short/medium/long decision reference).
+            # Keep it close to actual timeframes so users can reason about it:
+            # 24h ≈ 1H / 4H context, 3d ≈ 4H / 1D, 1w ≈ 1D, 1m ≈ 1W.
+            regime = self._detect_market_regime(data.get("indicators") or {})
+            raw_horizon_scores = {
+                "next_24h": _pick_horizon_score(objective_by_tf, "1H", ["4H", "1D"]),
+                "next_3d": _pick_horizon_score(objective_by_tf, "4H", ["1D", "1W"]),
+                "next_1w": _pick_horizon_score(objective_by_tf, "1D", ["1W", "4H"]),
+                "next_1m": _pick_horizon_score(objective_by_tf, "1W", ["1D", "4H"]),
+            }
+
+            horizon_scores = {
+                key: _stabilize_horizon_score(val, regime, key)
+                for key, val in raw_horizon_scores.items()
+            }
 
             def _trend_strength(score_val: float) -> str:
                 a = abs(float(score_val))
@@ -1392,24 +1435,24 @@ IMPORTANT:
 
             trend_outlook = {
                 "next_24h": {
-                    "score": round(score_24h, 2),
-                    "trend": self._score_to_decision(score_24h, market=market),
-                    "strength": _trend_strength(score_24h),
+                    "score": round(horizon_scores["next_24h"], 2),
+                    "trend": self._score_to_decision(horizon_scores["next_24h"], market=market),
+                    "strength": _trend_strength(horizon_scores["next_24h"]),
                 },
                 "next_3d": {
-                    "score": round(score_3d, 2),
-                    "trend": self._score_to_decision(score_3d, market=market),
-                    "strength": _trend_strength(score_3d),
+                    "score": round(horizon_scores["next_3d"], 2),
+                    "trend": self._score_to_decision(horizon_scores["next_3d"], market=market),
+                    "strength": _trend_strength(horizon_scores["next_3d"]),
                 },
                 "next_1w": {
-                    "score": round(score_1w, 2),
-                    "trend": self._score_to_decision(score_1w, market=market),
-                    "strength": _trend_strength(score_1w),
+                    "score": round(horizon_scores["next_1w"], 2),
+                    "trend": self._score_to_decision(horizon_scores["next_1w"], market=market),
+                    "strength": _trend_strength(horizon_scores["next_1w"]),
                 },
                 "next_1m": {
-                    "score": round(score_1m, 2),
-                    "trend": self._score_to_decision(score_1m, market=market),
-                    "strength": _trend_strength(score_1m),
+                    "score": round(horizon_scores["next_1m"], 2),
+                    "trend": self._score_to_decision(horizon_scores["next_1m"], market=market),
+                    "strength": _trend_strength(horizon_scores["next_1m"]),
                 },
             }
             trend_outlook_summary = _build_trend_outlook_summary(trend_outlook, language)
@@ -1424,7 +1467,6 @@ IMPORTANT:
             cfg = self._get_ai_calibration(market=market)
             min_abs_override = float(cfg.get("min_consensus_abs_override") or 15.0)
             quality_hold_thr = float(cfg.get("quality_hold_threshold") or 0.7)
-            regime = self._detect_market_regime(data.get("indicators") or {})
             if regime == "ranging":
                 min_abs_override *= 1.2
 
